@@ -48,8 +48,7 @@ int main(int argc, char** argv)
 	fstat(filefd, &in_stat);
 	printf("File length: %u\n", (int)in_stat.st_size);
 
-	fileaddr = mmap(NULL, in_stat.st_size,
-		PROT_READ, MAP_SHARED, filefd, 0);
+	fileaddr = mmap(NULL, in_stat.st_size, PROT_READ, MAP_SHARED, filefd, 0);
 	if(fileaddr == MAP_FAILED){
 		fprintf(stderr, "Failed to mmap %s: %s\n", argv[1], strerror(errno));
 		return errno;
@@ -59,7 +58,7 @@ int main(int argc, char** argv)
 	/* Open FTDI device for SPI */
 	context = Open(0x0403, 0x6014, SPI0, SIX_MHZ, MSB, IFACE_A, NULL, NULL);
 	if(context == NULL || context->open == 0){
-		fprintf(stderr, "MPSSE context not valid!\n");
+		fprintf(stderr, "MPSSE context not valid!\nMake sure winUSB drivers are installed with Zadig\n");
 		exit(1);
 	}
 	else
