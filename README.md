@@ -3,7 +3,10 @@ Very essential tool for iCE40 FPGAs bitstream programming using
 bare bones FTDI C232HM MPSSE cable
 
 Tested with UPDuino board 
+
 http://gnarlygrey.atspace.cc/development-platform.html#upduino
+
+on Ubuntu 16.04.2 and Cygwin
 
 Pinout
 
@@ -17,9 +20,12 @@ Pinout
 | GND     |  Black           |  JP2-6   |
 
 
-Leave J1 unpopulated.
+Leave J1 unpopulated. A blinky LED bitstream example is provided for testing
+purposes on UPDuino board.
 
-Prerequisites: ibftdi1. Install with apt-get install libftdi1-dev
+
+Prerequisites: libftdi1
+On Cygwin use Zadig to install WinUSB driver.
 
 libmpsse essential sources are embedded in the project for 
 convenience as there's no Debian package for it yet.
