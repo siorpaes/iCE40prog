@@ -18,6 +18,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <mpsse.h>
 
 

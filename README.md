@@ -19,7 +19,7 @@ Pinout
 
 Leave J1 unpopulated.
 
-Prerequisites: ibftdi. Install with apt-get install libftdi-dev
+Prerequisites: ibftdi1. Install with apt-get install libftdi1-dev
 
 libmpsse essential sources are embedded in the project for 
 convenience as there's no Debian package for it yet.
