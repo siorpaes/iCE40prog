@@ -15,9 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <asm/errno.h>
 #include <sys/mman.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <mpsse.h>
@@ -31,7 +29,7 @@ int main(int argc, char** argv)
 	struct mpsse_context* context = NULL;
 	int err;
 
-	uint32_t id = 0x7eaa997e;
+	uint32_t sync = 0x7eaa997e;
 	uint8_t trailer[4];
 	
 	if(argc < 2){
@@ -84,7 +82,7 @@ int main(int argc, char** argv)
 	}
 
 	/* First, send Synchronization Pattern. Cfr TN1248 */
-	err = FastWrite(context, (char*)&id, sizeof(id));
+	err = FastWrite(context, (char*)&sync, sizeof(sync));
 	if(err != MPSSE_OK){
 		fprintf(stderr, "Error writing SPI: %i\n", err);
 		return -1;
