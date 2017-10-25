@@ -1,5 +1,5 @@
 # iCE40prog
-Very essential tool for iCE40 FPGAs bitstream programming using
+Very essential tool for iCE40 FPGAs SRAM bitstream programming using
 bare bones FTDI C232HM MPSSE cable
 
 Tested with UPDuino board 
