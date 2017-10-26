@@ -37,11 +37,25 @@
 #define WHITE   ADBUS6
 #define BLUE    ADBUS7
 
+/* Select here target board */
+
+#if 0
 /* Actual pinout for upduino board */
 #define PIN_SCK   ORANGE
 #define PIN_SS    WHITE
 #define PIN_MOSI  YELLOW
 #define PIN_RST   BLUE
+#define FTDI_MINOR (0x6014)
+
+#else
+
+/* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
+#define PIN_SCK   ADBUS0
+#define PIN_SS    ADBUS4
+#define PIN_MOSI  ADBUS2
+#define PIN_RST   ADBUS7
+#define FTDI_MINOR (0x6010)
+#endif
 
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
@@ -138,7 +152,7 @@ int main(int argc, char** argv)
 		version.minor, version.micro, version.snapshot_str);
 	
 	// try to open usb
-	r = ftdi_usb_open(ftdi, 0x0403, 0x6014);
+	r = ftdi_usb_open(ftdi, 0x0403, FTDI_MINOR);
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
 		ftdi_free(ftdi);
