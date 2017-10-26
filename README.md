@@ -1,14 +1,14 @@
 # iCE40prog
-Very essential tool for iCE40 FPGAs SRAM bitstream programming using
+Very essential tools for iCE40 FPGAs bitstream programming using
 bare bones FTDI C232HM MPSSE cable
 
-Tested with UPDuino board 
+Tested on Ubuntu 16.04.2 and Cygwin with UPDuino and Go Board boards
 
 http://gnarlygrey.atspace.cc/development-platform.html#upduino
 
-on Ubuntu 16.04.2 and Cygwin
+https://www.nandland.com/
 
-Pinout
+Upduino board pinout
 
 |Signal   | FTDI cable color | UPDuino  |
 |---------|:----------------:|:--------:|
@@ -23,8 +23,10 @@ Pinout
 Leave J1 unpopulated. A blinky LED bitstream example is provided for testing
 purposes on UPDuino board.
 
+Go Board can only work with the bitbanged version of the tool as MISO and MOSI signals
+are configured for iCE40 master mode (i.e.: loads bitstream from external serial flash).
 
-Prerequisites: libftdi1
+Prerequisites: libftdi1.
 On Cygwin use Zadig to install WinUSB driver.
 
 libmpsse essential sources are embedded in the project for 
