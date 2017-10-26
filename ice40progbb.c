@@ -18,19 +18,37 @@
 #include <unistd.h>
 #include <ftdi.h>
 
+#define ADBUS0 (1 << 0)
+#define ADBUS1 (1 << 1)
+#define ADBUS2 (1 << 2)
+#define ADBUS3 (1 << 3)
+#define ADBUS4 (1 << 4)
+#define ADBUS5 (1 << 5)
+#define ADBUS6 (1 << 6)
+#define ADBUS7 (1 << 7)
 
-#define PIN_ENA  0x04
-#define PIN_SCK  0x08
-#define PIN_MISO 0x10
-#define PIN_SS   0x20
-#define PIN_MOSI 0x40
+/* MPSSE Cable colors */
+#define ORANGE  ADBUS0
+#define YELLOW  ADBUS1
+#define GREEN   ADBUS2
+#define BROWN   ADBU33
+#define GREY    ADBUS4
+#define PURPLE  ADBUS5
+#define WHITE   ADBUS6
+#define BLUE    ADBUS7
 
-unsigned char gpio_out = PIN_ENA | PIN_SCK | PIN_SS | PIN_MOSI;
+/* Actual pinout */
+#define PIN_SCK   ORANGE
+#define PIN_SS    WHITE
+#define PIN_MOSI  YELLOW
+#define PIN_RST   BLUE
 
-void digitalWrite(struct ftdi_context *ftdi, unsigned char pin, int value)
+unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
+
+void digitalWrite(struct ftdi_context *ftdi, uint8_t pin, int value)
 {
 	// store current value
-	static unsigned char r = 0;
+	static uint8_t r = 0;
 	
 	if (value)
 		r |= pin;
@@ -41,6 +59,34 @@ void digitalWrite(struct ftdi_context *ftdi, unsigned char pin, int value)
 }
 
 
+void spi_byte(struct ftdi_context *ftdi, uint8_t byte)
+{
+	int i;
+	
+	for (i = 7; i >= 0; i--) { // most significant bit first
+		if (byte & (1 << i))
+			digitalWrite(ftdi, PIN_MOSI, 1);
+		else
+			digitalWrite(ftdi, PIN_MOSI, 0);
+		
+		// do a clock
+		digitalWrite(ftdi, PIN_SCK, 1);
+		digitalWrite(ftdi, PIN_SCK, 0);
+	}
+}
+
+
+void spi_send(struct ftdi_context *ftdi, uint8_t* buf, int len)
+{
+	int i;
+
+	for(i=0; i<len; i++){
+		spi_byte(ftdi, buf[i]);
+		printf("Sent %i\n", i);
+	}
+}
+
+
 int main(int argc, char** argv)
 {
 	struct ftdi_context *ftdi;
@@ -48,7 +94,7 @@ int main(int argc, char** argv)
 	int filefd;
 	struct stat in_stat;
 	void* fileaddr;	
-	int err, r;
+	int r;
 
 	uint32_t sync = 0x7eaa997e;
 	uint8_t trailer[4];
@@ -103,8 +149,31 @@ int main(int argc, char** argv)
 
 	ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
 
+
+	/* Prepare SPI */
+	digitalWrite(ftdi, PIN_SS,   1);
+	digitalWrite(ftdi, PIN_MOSI, 0);
+	digitalWrite(ftdi, PIN_SCK,  0);
+
+	/* Put iCE40 in slave mode */
+	digitalWrite(ftdi, PIN_SS,  0);
+	digitalWrite(ftdi, PIN_RST, 0);
+	usleep(5000);
+	digitalWrite(ftdi, PIN_RST, 1);
+	usleep(5000);
+
 	
-	// free resources
+	/* First, send Synchronization Pattern. Cfr TN1248 */
+	spi_send(ftdi, (uint8_t*)&sync, sizeof(sync));
+
+	/* Send bitstream */
+	spi_send(ftdi, (uint8_t*)fileaddr, in_stat.st_size);
+
+	/* Send dummy bits */
+	spi_send(ftdi, (uint8_t*)trailer, sizeof(trailer));
+	
+
+	/* Clean up */
 	r = ftdi_usb_close(ftdi);
 	if (r != 0) {
 		fprintf(stderr, "unable to close ftdi device: %d (%s)\n", r,
@@ -114,61 +183,7 @@ int main(int argc, char** argv)
 	}
 	
 	ftdi_free(ftdi);
-	return EXIT_SUCCESS;
-	
-#if 0
-	/* Open FTDI device for SPI */
-	context = Open(0x0403, 0x6014, SPI0, SIX_MHZ, MSB, IFACE_A, NULL, NULL);
-	if(context == NULL || context->open == 0){
-		fprintf(stderr, "MPSSE context not valid!\nMake sure winUSB drivers are installed with Zadig\n");
-		exit(1);
-	}
-	else
-		printf("Context ok\n");
 
-	/* Set iCE40 to SPI slave */
-	PinLow(context, GPIOL2); //spi slave, White wire
-	PinLow(context, GPIOL3); //reset, Blue wire
-	usleep(200000);
-	
-	/* Leave reset */
-	PinHigh(context, GPIOL3);
-	usleep(100000);
-
-	
-	/* Start SPI communication */
-	err = Start(context);
-	if(err != MPSSE_OK){
-		fprintf(stderr, "Error on Start condition: %i\n", err);
-		return -1;
-	}
-
-	/* First, send Synchronization Pattern. Cfr TN1248 */
-	err = FastWrite(context, (char*)&sync, sizeof(sync));
-	if(err != MPSSE_OK){
-		fprintf(stderr, "Error writing SPI: %i\n", err);
-		return -1;
-	}
-
-	/* Send bitstream */
-	err = FastWrite(context, fileaddr, in_stat.st_size);
-	if(err != MPSSE_OK){
-		fprintf(stderr, "Error writing SPI: %i\n", err);
-		return -1;
-	}
-
-	/* Send dummy bits */
-	err = FastWrite(context, (char*)trailer, sizeof(trailer));
-	if(err != MPSSE_OK){
-		fprintf(stderr, "Error writing SPI: %i\n", err);
-		return -1;
-	}
-	
-	/* Clean up */
-	Stop(context);
-	Close(context);
-
-#endif
 	munmap(fileaddr, in_stat.st_size);
 	
 	return 0;
