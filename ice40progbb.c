@@ -45,17 +45,24 @@
 
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
-void digitalWrite(struct ftdi_context *ftdi, uint8_t pin, int value)
-{
+int digitalWrite(struct ftdi_context *ftdi, uint8_t pin, int value)
+{	
 	// store current value
 	static uint8_t r = 0;
+	int err;
 	
 	if (value)
 		r |= pin;
 	else
 		r &= ~pin;
 	
-	ftdi_write_data(ftdi, &r, sizeof(r));
+	err = ftdi_write_data(ftdi, &r, sizeof(r));
+	if(err != sizeof(r)){
+		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
+		return EXIT_FAILURE;
+	}
+
+	return 0;
 }
 
 
@@ -82,7 +89,6 @@ void spi_send(struct ftdi_context *ftdi, uint8_t* buf, int len)
 
 	for(i=0; i<len; i++){
 		spi_byte(ftdi, buf[i]);
-		printf("Sent %i\n", i);
 	}
 }
 
@@ -94,7 +100,7 @@ int main(int argc, char** argv)
 	int filefd;
 	struct stat in_stat;
 	void* fileaddr;	
-	int r;
+	int err, r;
 
 	uint32_t sync = 0x7eaa997e;
 	uint8_t trailer[4];
@@ -147,7 +153,12 @@ int main(int argc, char** argv)
 		printf("FTDI chipid: %X\n", chipid);
 	}
 
-	ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
+	//ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
+	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
+	if(err){
+		printf("Error %i in ftdi_set_bitmode(): %s", err, ftdi_get_error_string(ftdi));
+		return EXIT_FAILURE;
+	}
 
 
 	/* Prepare SPI */
