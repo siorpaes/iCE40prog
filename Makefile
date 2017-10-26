@@ -5,7 +5,7 @@ ICE40PROGBB = ice40progbb
 ICE40PROBBGOBJS = ice40progbb.o
 
 
-CFLAGS = -Wall -I./mpsse -I/usr/include/libftdi1 -DLIBFTDI1=1
+CFLAGS = -Wall -O3 -I./mpsse -I/usr/include/libftdi1 -DLIBFTDI1=1
 LDLIBS = -lftdi1
 
 

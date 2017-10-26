@@ -37,7 +37,7 @@
 #define WHITE   ADBUS6
 #define BLUE    ADBUS7
 
-/* Actual pinout */
+/* Actual pinout for upduino board */
 #define PIN_SCK   ORANGE
 #define PIN_SS    WHITE
 #define PIN_MOSI  YELLOW
@@ -45,22 +45,21 @@
 
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
+uint8_t* buffer;
+int bufferPos;
+
 int digitalWrite(struct ftdi_context *ftdi, uint8_t pin, int value)
 {	
 	// store current value
 	static uint8_t r = 0;
-	int err;
 	
 	if (value)
 		r |= pin;
 	else
 		r &= ~pin;
-	
-	err = ftdi_write_data(ftdi, &r, sizeof(r));
-	if(err != sizeof(r)){
-		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
-		return EXIT_FAILURE;
-	}
+
+	/* Prepare buffer */
+	buffer[bufferPos++] = r;
 
 	return 0;
 }
@@ -125,6 +124,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Failed to mmap %s: %s\n", argv[1], strerror(errno));
 		return errno;
 	}
+
 	ftdi = ftdi_new();
 	if (ftdi == 0) {
 		fprintf(stderr, "ftdi_new failed\n");
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
-	// Read out FTDIChip-ID of R type chips
+	// Read out FTDIChip-ID
 	if (1 || ftdi->type == TYPE_R) {
 		unsigned int chipid = 0;
 		
@@ -161,6 +161,16 @@ int main(int argc, char** argv)
 	}
 
 
+	/* For each bit there's a full port write.
+	 * Each byte requires 10 bit writes
+	 * Add extra heading/trailer
+	 */
+	buffer = malloc(10*8*in_stat.st_size + 1024);
+	if(buffer == NULL){
+		printf("Error allocating buffer\r");
+		return EXIT_FAILURE;
+	}
+	
 	/* Prepare SPI */
 	digitalWrite(ftdi, PIN_SS,   1);
 	digitalWrite(ftdi, PIN_MOSI, 0);
@@ -184,6 +194,12 @@ int main(int argc, char** argv)
 	spi_send(ftdi, (uint8_t*)trailer, sizeof(trailer));
 	
 
+	/* Commit actual full buffer */
+	err = ftdi_write_data(ftdi, buffer, bufferPos);
+	if(err != sizeof(r)){
+		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
+	}
+	
 	/* Clean up */
 	r = ftdi_usb_close(ftdi);
 	if (r != 0) {
