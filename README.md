@@ -1,5 +1,5 @@
 # iCE40prog
-Very essential tools for iCE40 FPGAs bitstream programming using
+Very essential tools for iCE40 FPGAs _SRAM_ bitstream programming using
 bare bones FTDI C232HM MPSSE cable
 
 Tested on Ubuntu 16.04.2 and Cygwin with UPDuino and Go Board boards
