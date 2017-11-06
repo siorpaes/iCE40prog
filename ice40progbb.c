@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 	int filefd;
 	struct stat in_stat;
 	void* fileaddr;	
-	int err, r;
+	int err, r, i;
 
 	uint32_t sync = 0x7eaa997e;
 	uint8_t trailer[4];
@@ -167,8 +167,8 @@ int main(int argc, char** argv)
 		printf("FTDI chipid: %X\n", chipid);
 	}
 
-	//ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
-	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
+	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
+	//err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
 	if(err){
 		printf("Error %i in ftdi_set_bitmode(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
@@ -206,12 +206,16 @@ int main(int argc, char** argv)
 
 	/* Send dummy bits */
 	spi_send(ftdi, (uint8_t*)trailer, sizeof(trailer));
-	
+
+#define CHUNK 1024
 
 	/* Commit actual full buffer */
-	err = ftdi_write_data(ftdi, buffer, bufferPos);
-	if(err != sizeof(r)){
-		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
+	//err = ftdi_write_data(ftdi, buffer, bufferPos);
+	for(i=0; i<bufferPos/CHUNK; i++){
+		err = ftdi_write_data(ftdi, &buffer[i*CHUNK], CHUNK);
+		if(err != sizeof(r)){
+			printf("Error %i %i in ftdi_write_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
+		}
 	}
 	
 	/* Clean up */
