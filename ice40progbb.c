@@ -57,12 +57,11 @@
 #define FTDI_MINOR (0x6010)
 #endif
 
-#define CHUNK 1024
-uint8_t dummy[CHUNK];
+#define CHUNKSIZE 4096
 
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
-uint8_t* buffer;
+uint8_t *buffer, *dummy;
 int bufferPos;
 
 int digitalWrite(struct ftdi_context *ftdi, uint8_t pin, int value)
@@ -170,13 +169,21 @@ int main(int argc, char** argv)
 		printf("FTDI chipid: %X\n", chipid);
 	}
 
+	/* Open in Bitbang synchronous mode */
 	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
-	//err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
 	if(err){
 		printf("Error %i in ftdi_set_bitmode(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
 	}
 
+
+	/* Set decent baud rate */
+	err = ftdi_set_baudrate(ftdi, 100000);
+	if(err){
+		printf("Error %i in ftdi_set_baudrate(): %s", err, ftdi_get_error_string(ftdi));
+		return EXIT_FAILURE;
+	}
+	
 
 	/* For each bit there's a full port write.
 	 * Each byte requires 10 bit writes
@@ -185,6 +192,12 @@ int main(int argc, char** argv)
 	buffer = malloc(10*8*in_stat.st_size + 1024);
 	if(buffer == NULL){
 		printf("Error allocating buffer\r");
+		return EXIT_FAILURE;
+	}
+
+	dummy = malloc(10*8*in_stat.st_size + 1024);
+	if(dummy == NULL){
+		printf("Error allocating dummy buffer\r");
 		return EXIT_FAILURE;
 	}
 	
@@ -210,32 +223,30 @@ int main(int argc, char** argv)
 	/* Send dummy bits */
 	spi_send(ftdi, (uint8_t*)trailer, sizeof(trailer));
 
-#if 0
-	/* Commit actual full buffer */
-	err = ftdi_write_data(ftdi, buffer, bufferPos);
-	if(err < 0){
-		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
-	}
-			
-
-#else
-	for(i=0; i<bufferPos/CHUNK; i++){
-		err = ftdi_write_data(ftdi, &buffer[i*CHUNK], CHUNK);
-		if(err != CHUNK){
+	/* Commit actual full buffer.
+	 * Send data in chunks as there's a max possible size to cope with (~24000 bytes)
+	 */
+	for(i=0; i<bufferPos/CHUNKSIZE; i++){
+		err = ftdi_write_data(ftdi, &buffer[i*CHUNKSIZE], CHUNKSIZE);
+		if(err != CHUNKSIZE){
 			printf("Error %i %i in ftdi_write_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
 		}
+		else{
+			printf("Written chunk #%i out of %i\r", i, bufferPos/CHUNKSIZE + 1);
+		}
 
-		/* Empty buffer so not to incur in USB errors */
-		err = ftdi_read_data(ftdi, dummy, CHUNK);
-		if(err != CHUNK){
+		/* Empty read buffer so not to incur in USB errors */
+		err = ftdi_read_data(ftdi, dummy, CHUNKSIZE);
+		if(err != CHUNKSIZE){
 			printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
 		}
 	}
 
-	err = ftdi_write_data(ftdi, &buffer[i*CHUNK], bufferPos % CHUNK);
-
-	
-#endif
+	/* Send last chunk */
+	err = ftdi_write_data(ftdi, &buffer[i*CHUNKSIZE], bufferPos % CHUNKSIZE);
+	if(err != bufferPos % CHUNKSIZE){
+		printf("Error %i %i in ftdi_write_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
+	}
 	
 	/* Clean up */
 	r = ftdi_usb_close(ftdi);
