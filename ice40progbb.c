@@ -57,6 +57,9 @@
 #define FTDI_MINOR (0x6010)
 #endif
 
+#define CHUNK 1024
+uint8_t dummy[CHUNK];
+
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
 uint8_t* buffer;
@@ -113,7 +116,7 @@ int main(int argc, char** argv)
 	int filefd;
 	struct stat in_stat;
 	void* fileaddr;	
-	int err, r;
+	int err, r, i;
 
 	uint32_t sync = 0x7eaa997e;
 	uint8_t trailer[4];
@@ -167,8 +170,8 @@ int main(int argc, char** argv)
 		printf("FTDI chipid: %X\n", chipid);
 	}
 
-	//err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
-	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
+	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
+	//err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
 	if(err){
 		printf("Error %i in ftdi_set_bitmode(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
@@ -207,17 +210,31 @@ int main(int argc, char** argv)
 	/* Send dummy bits */
 	spi_send(ftdi, (uint8_t*)trailer, sizeof(trailer));
 
+#if 0
 	/* Commit actual full buffer */
 	err = ftdi_write_data(ftdi, buffer, bufferPos);
+	if(err < 0){
+		printf("Error %i in ftdi_write_data(): %s\n", err, ftdi_get_error_string(ftdi));
+	}
+			
 
-#if 0
-	#define CHUNK 1024
+#else
 	for(i=0; i<bufferPos/CHUNK; i++){
 		err = ftdi_write_data(ftdi, &buffer[i*CHUNK], CHUNK);
 		if(err != CHUNK){
 			printf("Error %i %i in ftdi_write_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
 		}
+
+		/* Empty buffer so not to incur in USB errors */
+		err = ftdi_read_data(ftdi, dummy, CHUNK);
+		if(err != CHUNK){
+			printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
+		}
 	}
+
+	err = ftdi_write_data(ftdi, &buffer[i*CHUNK], bufferPos % CHUNK);
+
+	
 #endif
 	
 	/* Clean up */
