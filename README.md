@@ -26,7 +26,7 @@ Go Board can only work with the bitbanged version of the tool as MISO and MOSI s
 are configured for iCE40 master mode (i.e.: loads bitstream from external serial flash).
 
 Prerequisites: libftdi1.
-On Cygwin use Zadig to install WinUSB driver.
+On Cygwin use Zadig to install WinUSB driver over *first* USB/Serial converter (Interface 0).
 On Linux, copy (as root) the contents of udev-rules directory into /etc/udev/rules.d/ if willing to use MPSSE cable as non-root user.
 
 libmpsse essential sources are embedded in the project for convenience as there's no Debian package for it yet.

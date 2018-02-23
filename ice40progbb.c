@@ -50,11 +50,13 @@
 #else
 
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
-#define PIN_SCK   ADBUS0
-#define PIN_SS    ADBUS4
-#define PIN_MOSI  ADBUS2
-#define PIN_RST   ADBUS7
+#define PIN_SCK     ADBUS0
+#define PIN_SS      ADBUS4
+#define PIN_MOSI    ADBUS2
+#define PIN_RST     ADBUS7
 #define FTDI_MINOR (0x6010)
+#define FTDI_SERIAL   "FT2BYGO8"
+#define FTDI_DESC     "USB <-> Serial Converter"
 #endif
 
 #define CHUNKSIZE 4096
@@ -154,20 +156,35 @@ int main(int argc, char** argv)
 		version.minor, version.micro, version.snapshot_str);
 	
 	// try to open usb
-	r = ftdi_usb_open(ftdi, 0x0403, FTDI_MINOR);
+	r = ftdi_usb_open_desc(ftdi, 0x0403, FTDI_MINOR, FTDI_DESC, FTDI_SERIAL);
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
 		ftdi_free(ftdi);
 		return EXIT_FAILURE;
 	}
 	
-	// Read out FTDIChip-ID
+	/* Read out FTDIChip-ID */
 	if (1 || ftdi->type == TYPE_R) {
 		unsigned int chipid = 0;
 		
 		printf("ftdi_read_chipid: %d\n", ftdi_read_chipid(ftdi, &chipid));
 		printf("FTDI chipid: %X\n", chipid);
 	}
+
+
+#if 0 // only libftdi >= 1.4
+	/* Read other FTDI parameters */
+	char serialBuf[32];
+	err = ftdi_eeprom_get_strings(ftdi, NULL, 0, NULL, 0, serialBuf, sizeof(serialBuf));
+	if(err){
+		printf("Error %i in ftdi_eeprom_get_strings: %s", err, ftdi_get_error_string(ftdi));
+		return EXIT_FAILURE;
+	}
+	else{
+		printf("Serial: %s\n", serialBuf);
+	}
+#endif
+	
 
 	/* Open in Bitbang synchronous mode */
 	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
