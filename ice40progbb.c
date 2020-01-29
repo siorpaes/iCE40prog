@@ -1,6 +1,6 @@
 /** Very simple bitstream programmer for Lattice iCE40 FPGAs
- * using plain FTDI C232HM cable in bitbang mode so to support
- * Go Board. Uses libftdi directly, not libmpsse
+ * using plain FTDI bitbang mode so to support Go Board.
+ * Uses libftdi directly, not libmpsse.
  *
  * See http://jdelfes.blogspot.it/2014/02/spi-bitbang-ft232r.html
  *
@@ -37,18 +37,16 @@
 #define WHITE   ADBUS6
 #define BLUE    ADBUS7
 
+#define FTDI_MAJOR (0x0403)
 /* Select here target board */
-
 #if 0
-/* Actual pinout for upduino board */
+/* Actual pinout for Upduino board */
 #define PIN_SCK   ORANGE
 #define PIN_SS    WHITE
 #define PIN_MOSI  YELLOW
 #define PIN_RST   BLUE
 #define FTDI_MINOR (0x6014)
-
 #else
-
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
 #define PIN_SCK     ADBUS0
 #define PIN_SS      ADBUS4
@@ -154,11 +152,12 @@ int main(int argc, char** argv)
 	printf("Initialized libftdi %s (major: %d, minor: %d, micro: %d,"
 		" snapshot ver: %s)\n", version.version_str, version.major,
 		version.minor, version.micro, version.snapshot_str);
-	
-#if 1
-	/* daz */
+
+	/* Cygwin version started to give problems with multichannel FTIDIs on Windows 10.
+	 * The only way to open FTDI is using ftdi_usb_find_all() and ftdi_usb_open_dev() */	
+#if defined __CYGWIN__
 	struct ftdi_device_list* devlist;
-	int ndevices =  ftdi_usb_find_all(ftdi, &devlist, 0x0403, 0x6010);
+	int ndevices =  ftdi_usb_find_all(ftdi, &devlist, 0x0403, FTDI_MINOR);
 	printf("Found %i devices\n", ndevices);
 	r = ftdi_usb_open_dev(ftdi, devlist->next->dev);
 	if (r != 0) {
@@ -168,27 +167,21 @@ int main(int argc, char** argv)
 	}
 
 	ftdi_list_free(&devlist);
-	//return 0;
-
 #else
-	// try to open usb
-	r = ftdi_usb_open_desc_index(ftdi, 0x0403, 0x6010, NULL, NULL, 0);
-	//r = ftdi_usb_open_string(ftdi, "i:0x0403:0x6010:0");
+	r = ftdi_usb_open_desc_index(ftdi, 0x0403, FTDI_MINOR, NULL, NULL, 0);
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
 		ftdi_free(ftdi);
 		return EXIT_FAILURE;
 	}
 #endif
-	/* Read out FTDIChip-ID */
-	if (1 || ftdi->type == TYPE_R) {
-		unsigned int chipid = 0;
-		
-		printf("ftdi_read_chipid: %d\n", ftdi_read_chipid(ftdi, &chipid));
-		printf("FTDI TYPE: %i\n", ftdi->type);
-		printf("FTDI chipid: %X\n", chipid);
-	}
 
+	/* Read out FTDIChip-ID */
+	unsigned int chipid = 0;
+		
+	printf("ftdi_read_chipid: %d\n", ftdi_read_chipid(ftdi, &chipid));
+	printf("FTDI TYPE: %i\n", ftdi->type);
+	printf("FTDI chipid: %X\n", chipid);
 
 #if 0 // only libftdi >= 1.4
 	/* Read other FTDI parameters */
@@ -202,7 +195,6 @@ int main(int argc, char** argv)
 		printf("Serial: %s\n", serialBuf);
 	}
 #endif
-	
 
 	/* Open in Bitbang synchronous mode */
 	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
