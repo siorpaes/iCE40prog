@@ -155,19 +155,37 @@ int main(int argc, char** argv)
 		" snapshot ver: %s)\n", version.version_str, version.major,
 		version.minor, version.micro, version.snapshot_str);
 	
-	// try to open usb
-	r = ftdi_usb_open_desc(ftdi, 0x0403, FTDI_MINOR, FTDI_DESC, FTDI_SERIAL);
+#if 1
+	/* daz */
+	struct ftdi_device_list* devlist;
+	int ndevices =  ftdi_usb_find_all(ftdi, &devlist, 0x0403, 0x6010);
+	printf("Found %i devices\n", ndevices);
+	r = ftdi_usb_open_dev(ftdi, devlist->next->dev);
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
 		ftdi_free(ftdi);
 		return EXIT_FAILURE;
 	}
-	
+
+	ftdi_list_free(&devlist);
+	//return 0;
+
+#else
+	// try to open usb
+	r = ftdi_usb_open_desc_index(ftdi, 0x0403, 0x6010, NULL, NULL, 0);
+	//r = ftdi_usb_open_string(ftdi, "i:0x0403:0x6010:0");
+	if (r != 0) {
+		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
+		ftdi_free(ftdi);
+		return EXIT_FAILURE;
+	}
+#endif
 	/* Read out FTDIChip-ID */
 	if (1 || ftdi->type == TYPE_R) {
 		unsigned int chipid = 0;
 		
 		printf("ftdi_read_chipid: %d\n", ftdi_read_chipid(ftdi, &chipid));
+		printf("FTDI TYPE: %i\n", ftdi->type);
 		printf("FTDI chipid: %X\n", chipid);
 	}
 
