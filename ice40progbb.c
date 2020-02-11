@@ -58,7 +58,7 @@
 #define PIN_MOSI  ADBUS2
 #define PIN_RST   ADBUS7
 #define FTDI_MINOR (0x6014)
-#define CHUNKSIZE 512
+#define CHUNKSIZE 2048
 
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
 #elif defined GOBOARD
@@ -217,14 +217,14 @@ int main(int argc, char** argv)
 #endif
 
 	/* Open in Bitbang synchronous mode */
-	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_SYNCBB);
+	err = ftdi_set_bitmode(ftdi, gpio_out, BITMODE_BITBANG);
 	if(err){
 		printf("Error %i in ftdi_set_bitmode(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
 	}
 
 	/* Set decent baud rate */
-	err = ftdi_set_baudrate(ftdi, 100000);
+	err = ftdi_set_baudrate(ftdi, 1000000);
 	if(err){
 		printf("Error %i in ftdi_set_baudrate(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
 		/* Empty read buffer so not to incur in USB errors */
 		err = ftdi_read_data(ftdi, dummy, CHUNKSIZE);
 		if(err != CHUNKSIZE){
-			//printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
+			printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
 		}
 	}
 
