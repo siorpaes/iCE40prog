@@ -175,7 +175,11 @@ int main(int argc, char** argv)
 	struct ftdi_device_list* devlist;
 	int ndevices =  ftdi_usb_find_all(ftdi, &devlist, 0x0403, FTDI_MINOR);
 	printf("Found %i devices\n", ndevices);
+#ifdef GOBOARD
 	r = ftdi_usb_open_dev(ftdi, devlist->next->dev);
+#else
+	r = ftdi_usb_open_dev(ftdi, devlist->dev);
+#endif
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
 		ftdi_free(ftdi);
@@ -274,6 +278,7 @@ int main(int argc, char** argv)
 		}
 		else{
 			printf("Written chunk #%i out of %i\r", i, bufferPos/CHUNKSIZE + 1);
+			fflush(stdout);
 		}
 
 		/* Empty read buffer so not to incur in USB errors */
