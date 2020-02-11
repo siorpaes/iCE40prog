@@ -31,8 +31,8 @@
 
 /* Select here target board */
 //#define UPDUINOV1
-//#define UPDUINOV2
-#define GOBOARD
+#define UPDUINOV2
+//#define GOBOARD
 
 /* Use FTDI MPSSE cable for Upduino1 board */
 #if defined UPDUINOV1
@@ -58,7 +58,7 @@
 #define PIN_MOSI  ADBUS2
 #define PIN_RST   ADBUS7
 #define FTDI_MINOR (0x6014)
-#define CHUNKSIZE 128
+#define CHUNKSIZE 512
 
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
 #elif defined GOBOARD
