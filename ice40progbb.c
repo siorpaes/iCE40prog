@@ -27,7 +27,15 @@
 #define ADBUS6 (1 << 6)
 #define ADBUS7 (1 << 7)
 
-/* MPSSE Cable colors */
+#define FTDI_MAJOR (0x0403)
+
+/* Select here target board */
+//#define UPDUINOV1
+//#define UPDUINOV2
+#define GOBOARD
+
+/* Use FTDI MPSSE cable for Upduino1 board */
+#if defined UPDUINOV1
 #define ORANGE  ADBUS0
 #define YELLOW  ADBUS1
 #define GREEN   ADBUS2
@@ -36,18 +44,24 @@
 #define PURPLE  ADBUS5
 #define WHITE   ADBUS6
 #define BLUE    ADBUS7
-
-#define FTDI_MAJOR (0x0403)
-/* Select here target board */
-#if 0
-/* Actual pinout for Upduino board */
 #define PIN_SCK   ORANGE
 #define PIN_SS    WHITE
 #define PIN_MOSI  YELLOW
 #define PIN_RST   BLUE
 #define FTDI_MINOR (0x6014)
-#else
+#define CHUNKSIZE 128    
+
+/* Onboard FT232HQ for Upduino2 board */
+#elif defined UPDUINOV2
+#define PIN_SCK   ADBUS0
+#define PIN_SS    ADBUS4
+#define PIN_MOSI  ADBUS2
+#define PIN_RST   ADBUS7
+#define FTDI_MINOR (0x6014)
+#define CHUNKSIZE 128
+
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
+#elif defined GOBOARD
 #define PIN_SCK     ADBUS0
 #define PIN_SS      ADBUS4
 #define PIN_MOSI    ADBUS2
@@ -55,9 +69,11 @@
 #define FTDI_MINOR (0x6010)
 #define FTDI_SERIAL   "FT2BYGO8"
 #define FTDI_DESC     "USB <-> Serial Converter"
+#define CHUNKSIZE 4096
+#else
+#error "Select target board"
 #endif
 
-#define CHUNKSIZE 4096
 
 unsigned char gpio_out = PIN_SCK | PIN_SS | PIN_MOSI | PIN_RST;
 
@@ -203,14 +219,12 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-
 	/* Set decent baud rate */
 	err = ftdi_set_baudrate(ftdi, 100000);
 	if(err){
 		printf("Error %i in ftdi_set_baudrate(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
 	}
-	
 
 	/* For each bit there's a full port write.
 	 * Each byte requires 10 bit writes
@@ -265,7 +279,7 @@ int main(int argc, char** argv)
 		/* Empty read buffer so not to incur in USB errors */
 		err = ftdi_read_data(ftdi, dummy, CHUNKSIZE);
 		if(err != CHUNKSIZE){
-			printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
+			//printf("Error %i %i in ftdi_read_data(): %s\n", err, i, ftdi_get_error_string(ftdi));
 		}
 	}
 
