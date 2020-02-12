@@ -1,7 +1,7 @@
-/** Very simple bitstream programmer for Lattice iCE40 FPGAs
- * using plain FTDI bitbang mode so to support Go Board.
+/** Very simple bitstream CRAM programmer for Lattice iCE40 FPGAs
+ * using plain FTDI bitbang mode so to support Go Board and UpduinoV2.
+ * Note: programs CRAM, _not_ SPI Flash.
  * Uses libftdi directly, not libmpsse.
- *
  * See http://jdelfes.blogspot.it/2014/02/spi-bitbang-ft232r.html
  *
  * david.siorpaes@st.com
@@ -49,7 +49,7 @@
 #define PIN_MOSI  YELLOW
 #define PIN_RST   BLUE
 #define FTDI_MINOR (0x6014)
-#define CHUNKSIZE 128
+#define CHUNKSIZE 2048
 #define FTDI_SPEED 1000000
 
 /* Onboard FT232HQ for Upduino2 board */
