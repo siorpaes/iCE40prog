@@ -49,7 +49,8 @@
 #define PIN_MOSI  YELLOW
 #define PIN_RST   BLUE
 #define FTDI_MINOR (0x6014)
-#define CHUNKSIZE 128    
+#define CHUNKSIZE 128
+#define FTDI_SPEED 1000000
 
 /* Onboard FT232HQ for Upduino2 board */
 #elif defined UPDUINOV2
@@ -59,6 +60,7 @@
 #define PIN_RST   ADBUS7
 #define FTDI_MINOR (0x6014)
 #define CHUNKSIZE 2048
+#define FTDI_SPEED 1000000
 
 /* Pinout for Go Board. Note that MISO/MOSI are reverted with respect to the iCE40 master mode! */
 #elif defined GOBOARD
@@ -70,6 +72,7 @@
 #define FTDI_SERIAL   "FT2BYGO8"
 #define FTDI_DESC     "USB <-> Serial Converter"
 #define CHUNKSIZE 4096
+#define FTDI_SPEED 100000
 #else
 #error "Select target board"
 #endif
@@ -224,7 +227,7 @@ int main(int argc, char** argv)
 	}
 
 	/* Set decent baud rate */
-	err = ftdi_set_baudrate(ftdi, 1000000);
+	err = ftdi_set_baudrate(ftdi, FTDI_SPEED);
 	if(err){
 		printf("Error %i in ftdi_set_baudrate(): %s", err, ftdi_get_error_string(ftdi));
 		return EXIT_FAILURE;
