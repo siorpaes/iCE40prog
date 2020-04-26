@@ -31,8 +31,8 @@
 
 /* Select here target board */
 //#define UPDUINOV1
-#define UPDUINOV2
-//#define GOBOARD
+//#define UPDUINOV2
+#define GOBOARD
 
 /* Use FTDI MPSSE cable for Upduino1 board */
 #if defined UPDUINOV1
@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 		" snapshot ver: %s)\n", version.version_str, version.major,
 		version.minor, version.micro, version.snapshot_str);
 
-	/* Cygwin version started to give problems with multichannel FTIDIs on Windows 10.
+	/* Cygwin version started to give problems with multichannel FTDIs on Windows 10.
 	 * The only way to open FTDI is using ftdi_usb_find_all() and ftdi_usb_open_dev() */	
 #if defined __CYGWIN__
 	struct ftdi_device_list* devlist;
@@ -185,6 +185,7 @@ int main(int argc, char** argv)
 #endif
 	if (r != 0) {
 		fprintf(stderr, "unable to open ftdi device: %d (%s)\n", r, ftdi_get_error_string(ftdi));
+		fprintf(stderr, "Check Zadig driver is installed\n");
 		ftdi_free(ftdi);
 		return EXIT_FAILURE;
 	}
