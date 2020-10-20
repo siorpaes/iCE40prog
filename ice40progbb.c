@@ -16,7 +16,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <ftdi.h>
+#include <libftdi1/ftdi.h>
 
 #define ADBUS0 (1 << 0)
 #define ADBUS1 (1 << 1)
@@ -33,6 +33,9 @@
 //#define UPDUINOV1
 //#define UPDUINOV2
 #define GOBOARD
+
+/* If using Cygwin on Windows10 enable this workaround */
+#undef CYGWIN_WORKAROUND
 
 /* Use FTDI MPSSE cable for Upduino1 board */
 #if defined UPDUINOV1
@@ -173,8 +176,8 @@ int main(int argc, char** argv)
 		version.minor, version.micro, version.snapshot_str);
 
 	/* Cygwin version started to give problems with multichannel FTDIs on Windows 10.
-	 * The only way to open FTDI is using ftdi_usb_find_all() and ftdi_usb_open_dev() */	
-#if defined __CYGWIN__
+	 * The only way to open FTDI is using ftdi_usb_find_all() and ftdi_usb_open_dev(). This workaruond is NOT needed in MinGW64 environments */	
+#if defined CYGWIN_WORKAROUND
 	struct ftdi_device_list* devlist;
 	int ndevices =  ftdi_usb_find_all(ftdi, &devlist, 0x0403, FTDI_MINOR);
 	printf("Found %i devices\n", ndevices);
